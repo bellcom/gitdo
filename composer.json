@@ -1,0 +1,7 @@
+{
+    "require": {
+        "guzzle/guzzle": "dev-master",
+        "symfony/console": "2.4.*@dev",
+        "symfony/yaml": "2.*"
+    }
+}
