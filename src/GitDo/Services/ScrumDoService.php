@@ -8,13 +8,18 @@ class ScrumDoService extends Services
 {
     protected $config_name = 'scrumdo';
 
-
     protected $status_map = [
         'igang'    => 4,
         'til test' => 7,
         'done'     => 10,
     ];
 
+    protected $user_map = [
+        'mrbase'        => 'mrbase',
+        'andersbryrup'  => 'andersbryrup',
+        'HeinrichDalby' => 'POMPdeLUX',
+        'lvonpomp'      => 'POMPdeLUX',
+    ];
 
     /**
      * Save a story in ScrumDo
@@ -38,8 +43,7 @@ class ScrumDoService extends Services
 
         $target = 'organizations/'.$this->parameters['organization'].'/projects/'.$this->parameters['project'].'/iterations/'.$this->parameters['iteration'].'/stories';
         $data = [
-            'detail'  => $issue['body']."\n\n\nRef: ".$issue['url'],
-            'rank'    => 1,
+            'detail'  => $issue['body']."\n\n\nRef: ".$issue['html_url'],
             'summary' => $issue['title'],
             'tags'    => implode(', ', $tags),
             'status'  => $status,
@@ -52,6 +56,8 @@ class ScrumDoService extends Services
         $client = $this->getClient();
 
         if (empty($issue['scrumdo_id'])) {
+            $data['rank'] = 100;
+            $data['assignees'] = $this->user_map[$issue['assignee']];
             $this->output->writeln('<comment>- creating issue #'.$issue['number'].' ('.$issue['title'].')</comment>');
             $request = $client->post($target, null, $data);
         } else {
