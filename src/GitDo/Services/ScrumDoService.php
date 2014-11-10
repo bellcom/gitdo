@@ -44,7 +44,7 @@ class ScrumDoService extends Services
         $target = 'organizations/'.$this->parameters['organization'].'/projects/'.$this->parameters['project'].'/iterations/'.$this->parameters['iteration'].'/stories';
         $data = [
             'detail'  => $issue['body']."\n\n\nRef: ".$issue['html_url'],
-            'summary' => $issue['title'],
+            'summary' => $issue['title'].' (#'.$issue['number'].')',
             'tags'    => implode(', ', $tags),
             'status'  => $status,
         ];
