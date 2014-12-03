@@ -53,7 +53,7 @@ class ScrumDoService extends Services
         $data = [
             'detail'  => $issue['body']."\n\n\nRef: ".$issue['html_url'],
             'status'  => $status,
-            'summary' => $issue['title'],
+            'summary' => $issue['title'].' (#'.$issue['number'].')',
             'tags'    => implode(', ', $tags),
         ];
 
