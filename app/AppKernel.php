@@ -1,7 +1,4 @@
-#!/usr/bin/env php
 <?php
-
-set_time_limit(0);
 
 require_once __DIR__.'/../vendor/autoload.php';
 $loader = new Composer\Autoload\ClassLoader();
@@ -14,3 +11,12 @@ use Symfony\Component\Console\Application;
 $application = new Application();
 $application->add(new GithubToScrumDoCommand());
 $application->run();
+
+
+class AppKernel
+{
+
+}
+
+$app = new AppKerle();
+return $app;

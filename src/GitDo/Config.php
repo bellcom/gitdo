@@ -14,7 +14,7 @@ class Config
      * @param  string $key find parameter matching the key
      * @return mixed
      */
-    public static function get($key)
+    public static function get($key, $default = null)
     {
         if (empty(self::$parameters)) {
             self::load();

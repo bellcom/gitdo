@@ -25,9 +25,11 @@ class GithubService extends Services
         }
 
         $response = $this->getClient()
-            ->get('/repos/'.$this->parameters['organization'].'/'.$this->parameters['project'].'/issues', null, [
+            ->get(['/repos/{owner}/{repo}/issues{?query*}', [
+                'owner' => $this->parameters['organization'],
+                'repo'  => $this->parameters['project'],
                 'query' => $filter,
-            ])
+            ]])
             ->send();
         ;
 
@@ -43,11 +45,13 @@ class GithubService extends Services
         }
 
         foreach ($json as $issue) {
+            if (('closed' == $state) && ($issue['state'] != 'closed')) {
+                continue;
+            }
             $issues[$issue['number']] = $issue;
             $issues['ids'][$issue['number']] = $issue['number'];
             $issues['search_tags'][] = 'tag:git'.$issue['number'];
         }
-
 
         // Loop through all pages, github lists issues in pages of 30 issues pr. page.
         $links = [];
@@ -57,13 +61,18 @@ class GithubService extends Services
                     parse_str(parse_url($link['url'], PHP_URL_QUERY), $filter);
 
                     $response = $this->getClient()
-                        ->get('/repos/'.$this->parameters['organization'].'/'.$this->parameters['project'].'/issues', null, [
+                        ->get(['/repos/{owner}/{repo}/issues{?query}', [
+                            'owner' => $this->parameters['organization'],
+                            'repo'  => $this->parameters['project'],
                             'query' => $filter,
-                        ])
+                        ]])
                         ->send();
                     ;
 
                     foreach ($response->json() as $issue) {
+                        if (('closed' == $state) && ($issue['state'] != 'closed')) {
+                            continue;
+                        }
                         $issues[$issue['number']] = $issue;
                         $issues['ids'][$issue['number']] = $issue['number'];
                         $issues['search_tags'][] = 'tag:git'.$issue['number'];
@@ -73,6 +82,35 @@ class GithubService extends Services
         }
 
         return $issues;
+    }
+
+
+    /**
+     * Fetch issue comments.
+     *
+     * @param  Date  $ts_since ISO 8601 formattet date
+     * @param  array $issue    Github issue
+     * @return array
+     */
+    public function fetchComments($ts_since, $issue)
+    {
+        $filter = [];
+        if ($ts_since) {
+            $filter['since'] = $ts_since;
+        }
+
+        $response = $this->getClient()
+            ->get(['repos/{owner}/{repo}/issues/{number}/comments{?query*}', [
+                'owner'  => $this->parameters['organization'],
+                'repo'   => $this->parameters['project'],
+                'number' => $issue['number'],
+                'query'  => $filter,
+            ]])
+            ->send();
+        ;
+
+        return $response->json();
+        // /repos/:owner/:repo/issues/:number/comments
     }
 
 

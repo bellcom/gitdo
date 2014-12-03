@@ -15,11 +15,13 @@ class ScrumDoService extends Services
     ];
 
     protected $user_map = [
-        'mrbase'        => 'mrbase',
         'andersbryrup'  => 'andersbryrup',
+        'henrik-farre'  => 'henrik_farre',
+        'mrbase'        => 'mrbase',
         'HeinrichDalby' => 'POMPdeLUX',
-        'lvonpomp'      => 'POMPdeLUX',
+        'pdlcec'        => 'POMPdeLUX',
     ];
+
 
     /**
      * Save a story in ScrumDo
@@ -41,29 +43,48 @@ class ScrumDoService extends Services
             }
         }
 
-        $target = 'organizations/'.$this->parameters['organization'].'/projects/'.$this->parameters['project'].'/iterations/'.$this->parameters['iteration'].'/stories';
-        $data = [
-            'detail'  => $issue['body']."\n\n\nRef: ".$issue['html_url'],
-            'summary' => $issue['title'],
-            'tags'    => implode(', ', $tags),
-            'status'  => $status,
+        $target = 'organizations/{organization}/projects/{project}/iterations/{iteration}/stories';
+        $params = [
+            'iteration'    => $this->parameters['iteration'],
+            'organization' => $this->parameters['organization'],
+            'project'      => $this->parameters['project'],
         ];
 
-        if ($issue['assignee']) {
-            $data['assignees'] = $issue['assignee'];
+        $data = [
+            'detail'  => $issue['body']."\n\n\nRef: ".$issue['html_url'],
+            'status'  => $status,
+            'summary' => $issue['title'],
+            'tags'    => implode(', ', $tags),
+        ];
+
+        if (isset($issue['assignee'])) {
+            $data['assignees'] = $this->user_map[$issue['assignee']['login']];
         }
+
+        // for some reason a description in scrum cannot start with an "@"
+        $data['detail'] = ltrim($data['detail'], '@');
 
         $client = $this->getClient();
 
         if (empty($issue['scrumdo_id'])) {
             $data['rank'] = 100;
-            $data['assignees'] = $this->user_map[$issue['assignee']];
             $this->output->writeln('<comment>- creating issue #'.$issue['number'].' ('.$issue['title'].')</comment>');
-            $request = $client->post($target, null, $data);
+            try {
+                $request = $client->post([$target, $params], null, $data);
+            } catch (\Exception $e) {
+                $this->output->writeln('<comment>- failed to save issue #'.$issue['number'].' ('.$issue['title'].'), reason: '.$e->getMessage().'</comment>');
+                return;
+            }
         } else {
             $this->output->writeln('<comment>- updating issue #'.$issue['number'].' ('.$issue['title'].')</comment>');
+
+            // "closed by github" issues is auto moved to iteration 113013
+            if (10 == $status) {
+                $target = 'organizations/{organization}/projects/{project}/iterations/113013/stories';
+            }
             $target .= '/'.$issue['scrumdo_id'];
-            $request = $client->put($target, null, $data);
+
+            $request = $client->put([$target, $params], null, $data);
         }
 
         try {
@@ -84,9 +105,11 @@ class ScrumDoService extends Services
     public function doSearch($search)
     {
         $response = $this->getClient()
-            ->get('organizations/'.$this->parameters['organization'].'/projects/'.$this->parameters['project'].'/search', null, [
-                'query' => ['q' => $search],
-            ])
+            ->get(['organizations/{organization}/projects/{project}/search{?query*}', [
+                'organization' => $this->parameters['organization'],
+                'project'      => $this->parameters['project'],
+                'query'        => ['q' => $search],
+            ]])
             ->send()
         ;
 
@@ -114,22 +137,43 @@ class ScrumDoService extends Services
 
     /**
      * Close a story
+     * Note: "closed by github" issues is auto moved to iteration 113013
      *
      * @param  array $story a ScrumDo story
      */
     public function closeStory($story)
     {
         try {
-            $this->output->writeln('<info>- closing story #'.$story['id'].' (git # '.$story['github_id'].')</info>');
+            $this->output->writeln('<info>- closing story #'.$story['id'].' (git #'.$story['github_id'].')</info>');
             return $this->getClient()
-                ->put('organizations/'.$this->parameters['organization'].'/projects/'.$this->parameters['project'].'/stories/'.$story['id'], null, [
-                    'status' => 10
-                ])
+                ->put(['organizations/{organization}/projects/{project}/iterations/113013/stories/{id}', [
+                    'organization' => $this->parameters['organization'],
+                    'project'      => $this->parameters['project'],
+                    'id'           => $story['id'],
+                ]], null, ['status' => 10])
                 ->send()
             ;
         } catch (\Exception $e) {
             $this->output->writeln('<error>- could not close issue, reason: '.$e->getMessage().'</error>');
         }
+    }
+
+
+    /**
+     * Fetch Story comments
+     *
+     * @param  array $story A ScrumDo story
+     * @return array        Array of comments
+     */
+    public function fetchComments($story)
+    {
+        $response = $this->getClient()
+            ->get(['comments/story/{id}', [
+                'id' => $story['id']
+            ]])->send()
+        ;
+
+        return $response->json();
     }
 
 

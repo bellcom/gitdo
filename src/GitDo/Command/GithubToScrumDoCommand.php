@@ -2,6 +2,7 @@
 
 namespace GitDo\Command;
 
+use GitDo\DB;
 use GitDo\Config;
 use GitDo\Services\GithubService;
 use GitDo\Services\ScrumDoService;
@@ -41,6 +42,16 @@ class GithubToScrumDoCommand extends Command
             touch($file);
         }
         $timestamp = $since = trim(file_get_contents($file));
+
+        // started, but cannot remember why ....
+        // $db = DB::getInstance();
+
+
+// $github  = new GithubService($this->output);
+// $scrumdo = new ScrumDoService($this->output);
+// $story = $scrumdo->doSearch('tag:git230');
+// print_r($scrumdo->fetchComments($story[0]));
+// print_r($github->fetchComments($timestamp, ['number' => 230]));
 
         $this->handleNewGithubIssues($timestamp);
         $this->handleClosedGithubIssues($timestamp);
