@@ -15,6 +15,7 @@ class ScrumDoService extends Services
     ];
 
     protected $user_map = [
+				'by-nissen'     => 'mvnissen88',
         'andersbryrup'  => 'andersbryrup',
         'henrik-farre'  => 'henrik_farre',
         'mrbase'        => 'mrbase',
