@@ -18,6 +18,7 @@ class ScrumDoService extends Services
         'andersbryrup'  => 'andersbryrup',
         'henrik-farre'  => 'henrik_farre',
         'mrbase'        => 'mrbase',
+        'mmh'           => 'mmh',
         'HeinrichDalby' => 'POMPdeLUX',
         'pdlcec'        => 'POMPdeLUX',
     ];
